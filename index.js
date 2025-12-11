@@ -32,8 +32,27 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    const db = client.db('loan_link');
+    const userCollection = db.collection('users')
+
+    // user apis
+    app.post('/users', async(req, res) => {
+        const user = req.body;
+        user.createdAt = new Date();
+
+        const query = {email: user.email};
+        const existsUser = await userCollection.findOne(query);
+        if(existsUser){
+          return res.send({message: 'user already exists!'})
+        }
+
+        const result = await userCollection.insertOne(user);
+        res.send(result);
+    })
+
     app.get('/users', async(req, res) => {
-        res.send({user: 'manik mia'})
+        const result = await userCollection.find().toArray();
+        res.send(result)
     })
 
 
