@@ -33,7 +33,8 @@ async function run() {
     await client.connect();
 
     const db = client.db('loan_link');
-    const userCollection = db.collection('users')
+    const userCollection = db.collection('users');
+    const loanApplicationCollection = db.collection('loanApplications')
 
     // user apis
     app.post('/users', async(req, res) => {
@@ -53,6 +54,14 @@ async function run() {
     app.get('/users', async(req, res) => {
         const result = await userCollection.find().toArray();
         res.send(result)
+    })
+
+    // loan apis
+    app.post('/loans', async(req, res) => {
+        const loan = req.body;
+        // console.log(loan);
+        const result = await loanApplicationCollection.insertOne(loan);
+        res.send(result);
     })
 
 
