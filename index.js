@@ -35,6 +35,8 @@ async function run() {
     const db = client.db('loan_link');
     const userCollection = db.collection('users');
     const loanApplicationCollection = db.collection('loanApplications')
+    const loanCollection = db.collection('loans')
+
 
     // user apis
     app.post('/users', async(req, res) => {
@@ -59,9 +61,23 @@ async function run() {
     // loan apis
     app.post('/loans', async(req, res) => {
         const loan = req.body;
+        const headers = req.headers;
+        console.log('headers', headers);
         // console.log(loan);
         const result = await loanApplicationCollection.insertOne(loan);
         res.send(result);
+    })
+
+    app.get('/loans', async(req, res) => {
+      const result = await loanCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.get('/my-loans', async(req, res) => {
+      const email = req.query.email;
+      const query = email ? {applicantsEmail: email} : {}
+      const result = await loanApplicationCollection.find(query).toArray();
+      res.send(result)
     })
 
 
