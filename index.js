@@ -10,6 +10,27 @@ const port = process.env.PORT || 3000;
 app.use(cors())
 app.use(express.json())
 
+const verifyFireBaseToken = async (req, res, next) => {
+    const token = req.headers.authorization;
+    
+    if(!token){
+      return res.status(401).send({message: 'unauthorized access!'})
+    }
+
+    try {
+      const idToken = token.split(' ')[1]
+      const decoded = await admin.auth().verifyIdToken(idToken)
+      // console.log('decoded in middleware', decoded);
+      req.decoded_email = decoded.email;
+      next()
+      
+    } catch (error) {
+      return res.status(401).send({message: "unauthorized access"})
+    }
+
+    
+}
+
 
 const uri = process.env.URI;
 
@@ -58,6 +79,13 @@ async function run() {
         res.send(result)
     })
 
+    app.get('/users/:email/role', async(req, res) => {
+        const email = req.params.email;
+        const query = {email}
+        const user = await userCollection.findOne(query)
+        res.send({role: user?.role || 'borrower'})
+    })
+
     // loan apis
     app.post('/loans', async(req, res) => {
         const loan = req.body;
@@ -73,11 +101,26 @@ async function run() {
       res.send(result)
     })
 
+
+    app.get('/loans/:id', async (req, res) => {
+      const { id } = req.params;
+      const loan = await loanCollection.findOne({ id }); 
+      if (!loan) return res.status(404).send({ error: 'Loan not found' });
+      res.send(loan);
+    });
+
+
     app.get('/my-loans', async(req, res) => {
       const email = req.query.email;
       const query = email ? {applicantsEmail: email} : {}
       const result = await loanApplicationCollection.find(query).toArray();
       res.send(result)
+    })
+
+    app.get('/pending-loans', async(req, res) => {
+        const query = {status: 'pending'}
+        const result = await loanApplicationCollection.find(query).toArray();
+        res.send(result)
     })
 
 
