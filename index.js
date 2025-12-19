@@ -102,6 +102,30 @@ async function run() {
     })
 
 
+  app.get('/home-loans', async (req, res) => {
+    
+  const homeLoans = await loanCollection
+    .find({ showHome: true })
+    .limit(6)
+    .toArray();
+
+  let finalLoans = homeLoans;
+
+  if (homeLoans.length < 6) {
+    const remaining = 6 - homeLoans.length;
+
+    const otherLoans = await loanCollection
+      .find({ showHome: { $ne: true } })
+      .limit(remaining)
+      .toArray();
+
+    finalLoans = [...homeLoans, ...otherLoans];
+  }
+
+  res.send(finalLoans);
+});
+
+
     app.get('/loans/:id', async (req, res) => {
       const { id } = req.params;
       const loan = await loanCollection.findOne({ id }); 
@@ -137,6 +161,35 @@ async function run() {
         const result = await loanCollection.deleteOne(query)
         res.send(result)
     })
+
+    app.patch('/loans/:id/show-home', async (req, res) => {
+    const id = req.params.id;
+    const { showHome } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: 'Invalid loan id' });
+    }
+
+    let updateDoc = {};
+
+    if (showHome) {
+      updateDoc = {
+        $set: { showHome: true }
+      };
+    } else {
+     
+      updateDoc = {
+        $unset: { showHome: "" }
+      };
+    }
+
+    const result = await loanCollection.updateOne(
+      { _id: new ObjectId(id) },
+      updateDoc
+    );
+
+    res.send(result);
+  });
 
 
     // Send a ping to confirm a successful connection
