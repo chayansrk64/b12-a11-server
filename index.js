@@ -2,7 +2,7 @@ const express = require('express');
 const app = express()
 const cors = require('cors')
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 3000;
 
 
@@ -121,6 +121,14 @@ async function run() {
         const query = {status: 'pending'}
         const result = await loanApplicationCollection.find(query).toArray();
         res.send(result)
+    })
+
+    app.patch('/loans/:id', async(req, res) => {
+        const id = req.params.id;
+        const updatedLoan = req.body;
+        const query = {_id: new ObjectId(id)};
+        const result = await loanCollection.updateOne(query, {$set: updatedLoan})
+        res.send(result);
     })
 
 
