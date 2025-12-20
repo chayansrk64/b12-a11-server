@@ -114,11 +114,21 @@ async function run() {
       res.send(result)
     })
 
+
     app.get('/manager/:email/loans', async (req, res) => {
     const email = req.params.email;
+    const {search = ""} = req.query;
 
-    const query = { email };
-    const result = await loanCollection.find(query).toArray();
+    if (req.params.email !== email) {
+    return res.status(403).send({ message: 'Forbidden' });
+  }
+
+   const query = {
+     email,
+    title: { $regex: search, $options: 'i' } 
+  };
+
+   const result = await loanCollection.find(query).toArray();
 
     res.send(result);
   });
