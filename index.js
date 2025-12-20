@@ -114,6 +114,16 @@ async function run() {
       res.send(result)
     })
 
+    app.get('/manager/:email/loans', async (req, res) => {
+    const email = req.params.email;
+
+    const query = { email };
+    const result = await loanCollection.find(query).toArray();
+
+    res.send(result);
+  });
+
+
 
   app.get('/home-loans', async (req, res) => {
 
