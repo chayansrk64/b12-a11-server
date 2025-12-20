@@ -96,6 +96,13 @@ async function run() {
         res.send(result);
     })
 
+    // manager loan post in loans
+    app.post('/addloan', async(req, res) => {
+        const loan = req.body;
+        const result = await loanCollection.insertOne(loan);
+        res.send(result)
+    })
+
     app.get('/loans-applications', async(req, res) => {
       const result = await loanApplicationCollection.find().toArray();
       res.send(result)
