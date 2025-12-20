@@ -96,6 +96,12 @@ async function run() {
         res.send(result);
     })
 
+    app.get('/loans-applications', async(req, res) => {
+      const result = await loanApplicationCollection.find().toArray();
+      res.send(result)
+    })
+
+
     app.get('/loans', async(req, res) => {
       const result = await loanCollection.find().toArray();
       res.send(result)
@@ -103,7 +109,7 @@ async function run() {
 
 
   app.get('/home-loans', async (req, res) => {
-    
+
   const homeLoans = await loanCollection
     .find({ showHome: true })
     .limit(6)
@@ -127,8 +133,9 @@ async function run() {
 
 
     app.get('/loans/:id', async (req, res) => {
-      const { id } = req.params;
-      const loan = await loanCollection.findOne({ id }); 
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const loan = await loanCollection.findOne(query); 
       if (!loan) return res.status(404).send({ error: 'Loan not found' });
       res.send(loan);
     });
