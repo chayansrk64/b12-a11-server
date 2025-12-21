@@ -6,9 +6,21 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 3000;
 
 
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./loanlink-7a1ec-firebase-adminsdk-fbsvc-82fe0bddfe.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+
+
 // middlewares
 app.use(cors())
 app.use(express.json())
+
+
 
 const verifyFireBaseToken = async (req, res, next) => {
     const token = req.headers.authorization;
@@ -59,6 +71,34 @@ async function run() {
     const loanCollection = db.collection('loans')
 
 
+
+
+    // middleware with database access
+    // must use after verifyFirebaseToken 
+
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded_email;
+      const query = {email}
+      const user = await userCollection.findOne(query)
+      if(!user || user.role !== 'admin'){
+        return res.status(403).send({message: 'forbidden access'})
+      }  
+      next()
+    }
+
+    // verifyRider
+    const verifyManager = async (req, res, next) => {
+      const email = req.decoded_email;
+      const query = {email}
+      const user = await userCollection.findOne(query)
+      if(!user || user.role !== 'manager'){
+        return res.status(403).send({message: 'forbidden access'})
+      }  
+      next()
+    }
+
+
+
     // user apis
     app.post('/users', async(req, res) => {
         const user = req.body;
@@ -74,7 +114,7 @@ async function run() {
         res.send(result);
     })
 
-    app.get('/users', async(req, res) => {
+    app.get('/users', verifyFireBaseToken, async(req, res) => {
         const result = await userCollection.find().toArray();
         res.send(result)
     })
@@ -87,7 +127,7 @@ async function run() {
     })
 
     // loan apis
-    app.post('/loans', async(req, res) => {
+    app.post('/loans', verifyFireBaseToken, async(req, res) => {
         const loan = req.body;
         const headers = req.headers;
         console.log('headers', headers);
@@ -97,13 +137,13 @@ async function run() {
     })
 
     // manager loan post in loans
-    app.post('/addloan', async(req, res) => {
+    app.post('/addloan', verifyFireBaseToken, verifyManager, async(req, res) => {
         const loan = req.body;
         const result = await loanCollection.insertOne(loan);
         res.send(result)
     })
 
-    app.get('/loans-applications', async(req, res) => {
+    app.get('/loans-applications', verifyFireBaseToken, verifyAdmin, async(req, res) => {
       const result = await loanApplicationCollection.find().toArray();
       res.send(result)
     })
@@ -115,7 +155,7 @@ async function run() {
     })
 
 
-    app.get('/manager/:email/loans', async (req, res) => {
+    app.get('/manager/:email/loans', verifyFireBaseToken, verifyManager, async (req, res) => {
     const email = req.params.email;
     const {search = ""} = req.query;
 
@@ -175,13 +215,13 @@ async function run() {
       res.send(result)
     })
 
-    app.get('/pending-loans', async(req, res) => {
+    app.get('/pending-loans', verifyFireBaseToken, verifyManager, async(req, res) => {
         const query = {status: 'pending'}
         const result = await loanApplicationCollection.find(query).toArray();
         res.send(result)
     })
 
-    app.get('/approved-loans', async(req, res) => {
+    app.get('/approved-loans', verifyFireBaseToken, verifyManager, async(req, res) => {
         const query = {status: 'approved'}
         const result = await loanApplicationCollection.find(query).toArray();
         res.send(result)
