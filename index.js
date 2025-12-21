@@ -181,6 +181,12 @@ async function run() {
         res.send(result)
     })
 
+    app.get('/approved-loans', async(req, res) => {
+        const query = {status: 'approved'}
+        const result = await loanApplicationCollection.find(query).toArray();
+        res.send(result)
+    })
+
     app.patch('/loans/:id', async(req, res) => {
         const id = req.params.id;
         const updatedLoan = req.body;
