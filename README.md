@@ -18,8 +18,8 @@ The backend provides a **secure, scalable API** that:
 ## 🌐 API Base URL
 
 🔗 **Base URL:**  
-https://your-backend-api-url.com  
-*(Replace with your deployed server URL)*
+[server](https://b12-a11-server-omega.vercel.app/)
+
 
 ---
 
