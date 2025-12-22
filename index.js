@@ -5,10 +5,15 @@ require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 3000;
 
+const stripe = require('stripe')(process.env.STRIPE_SECRET);
 
 const admin = require("firebase-admin");
 
-const serviceAccount = require("./loanlink-7a1ec-firebase-adminsdk-fbsvc-82fe0bddfe.json");
+// const serviceAccount = require("./loanlink-7a1ec-firebase-adminsdk-fbsvc-82fe0bddfe.json");
+// const serviceAccount = require("./firebase-admin-key.json");
+
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8')
+const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -63,7 +68,7 @@ app.get('/', (req, res) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const db = client.db('loan_link');
     const userCollection = db.collection('users');
@@ -118,6 +123,13 @@ async function run() {
         const result = await userCollection.find().toArray();
         res.send(result)
     })
+
+    app.get('/users/me', async (req, res) => {
+      const email = req.query.email;
+      const user = await userCollection.findOne({ email });
+      res.send(user);
+    });
+
 
     app.get('/users/:email/role', async(req, res) => {
         const email = req.params.email;
@@ -199,6 +211,7 @@ async function run() {
 });
 
 
+
     app.get('/loans/:id', async (req, res) => {
       const id = req.params.id;
       const query = {_id: new ObjectId(id)}
@@ -214,6 +227,16 @@ async function run() {
       const result = await loanApplicationCollection.find(query).toArray();
       res.send(result)
     })
+
+
+      app.get('/payloan/:id', async(req, res) => {
+       const id = req.params.id;
+       const query = {_id: new ObjectId(id)}
+       const result = await loanApplicationCollection.findOne(query);
+       res.send(result)
+    })
+
+  
 
     app.get('/pending-loans', verifyFireBaseToken, verifyManager, async(req, res) => {
         const query = {status: 'pending'}
@@ -291,9 +314,43 @@ async function run() {
   });
 
 
+  // payment related apis
+  app.post('/create-checkout-session', async(req, res) => {
+      const loanInfo = req.body;
+      // const amount = parseInt(loanInfo.loanAmount) * 100
+
+       const session = await stripe.checkout.sessions.create({
+          line_items: [
+            {
+             price_data: {
+              currency: 'usd',
+               unit_amount: 1000,
+                product_data: {
+                  name: loanInfo.loanTitle
+                },
+             },
+    
+              quantity: 1,
+            },
+          ],
+
+          customer_email: loanInfo.applicantsEmail,
+          mode: 'payment',
+          metadata: {
+            loanId: loanInfo.loanId
+          },
+          success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
+          cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-canceled`,
+        })
+
+        console.log(session)
+        res.send({url: session.url})
+  })
+
+
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
