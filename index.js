@@ -315,7 +315,7 @@ async function run() {
 
 
   // payment related apis
-  app.post('/create-checkout-session', async(req, res) => {
+  app.post('/payment-checkout-session', async(req, res) => {
       const loanInfo = req.body;
       // const amount = parseInt(loanInfo.loanAmount) * 100
 
@@ -339,8 +339,8 @@ async function run() {
           metadata: {
             loanId: loanInfo.loanId
           },
-          success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
-          cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-canceled`,
+          success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
         })
 
         console.log(session)
